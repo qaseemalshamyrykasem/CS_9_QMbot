@@ -14,172 +14,89 @@ const channelIDs = {
     'برمجة': '@programming_channel'
 };
 
-// حالة المستخدم لتتبع المستوى الحالي
-const userState = {};
-
 // التعامل مع أمر /start
 bot.onText(/\/start/, (msg) => {
     const chatId = msg.chat.id;
-    const welcomeText = `
-🌟 *مرحباً بك في بوت الملخصات الجامعية* 🌟
-
-🔹 *مطور البوت*: _قاسم الشميري_ 🛠️
-
-📚 *اختر القسم المطلوب باستخدام الأزرار أدناه*:
-    `;
+    const welcomeText = `🌟 مرحباً بك في بوت الملخصات الجامعية 🌟\n\n🔹 مطور البوت: قاسم الشميري\n\nاختر المادة المطلوبة باستخدام الأزرار أدناه.`;
 
     bot.sendMessage(chatId, welcomeText, {
-        parse_mode: 'Markdown',
         reply_markup: {
             inline_keyboard: [
-                [{ text: '🖥️ قسم علوم الحاسوب', callback_data: 'cs' }],
-                [{ text: '🔐 قسم الأمن السيبراني', callback_data: 'cyber' }]
+                [{ text: '📘 رياضيات', callback_data: 'رياضيات' }],
+                [{ text: '📗 فيزياء', callback_data: 'فيزياء' }],
+                [{ text: '📕 كيمياء', callback_data: 'كيمياء' }],
+                [{ text: '📙 برمجة', callback_data: 'برمجة' }],
+                [{ text: '⬅️ الرجوع', callback_data: 'back' }]
             ]
         }
     });
-
-    // حفظ حالة المستخدم
-    userState[chatId] = 'main_menu';
 });
 
-// دالة لجلب جميع الرسائل التي تحتوي على ملفات من قناة معينة
-async function getAllFilesFromChannel(channelUsername) {
+// التعامل مع الضغط على الأزرار
+bot.on('callback_query', async (callbackQuery) => {
+    const chatId = callbackQuery.message.chat.id;
+    const data = callbackQuery.data;
+
+    if (data === 'back') {
+        bot.sendMessage(chatId, 'تم العودة إلى القائمة الرئيسية', {
+            reply_markup: {
+                inline_keyboard: [
+                    [{ text: '📘 رياضيات', callback_data: 'رياضيات' }],
+                    [{ text: '📗 فيزياء', callback_data: 'فيزياء' }],
+                    [{ text: '📕 كيمياء', callback_data: 'كيمياء' }],
+                    [{ text: '📙 برمجة', callback_data: 'برمجة' }]
+                ]
+            }
+        });
+        return;
+    }
+
+    if (['رياضيات', 'فيزياء', 'كيمياء', 'برمجة'].includes(data)) {
+        const channelUsername = channelIDs[data];
+        if (channelUsername) {
+            const pdfMessageIds = await getPDFFilesFromChannel(channelUsername);
+            if (pdfMessageIds.length > 0) {
+                for (const messageId of pdfMessageIds) {
+                    // إعادة توجيه كل رسالة تحتوي على ملف PDF من القناة الخاصة
+                    bot.forwardMessage(chatId, channelUsername, messageId);
+                }
+            } else {
+                bot.sendMessage(chatId, 'لم يتم العثور على ملفات PDF في القناة.');
+            }
+        } else {
+            bot.sendMessage(chatId, 'القناة غير موجودة.');
+        }
+    }
+});
+
+// دالة لجلب ملفات PDF من قناة معينة باستخدام getUpdates
+async function getPDFFilesFromChannel(channelUsername) {
     const url = `https://api.telegram.org/bot${API_TOKEN}/getUpdates`;
 
     try {
         const response = await axios.get(url);
         const updates = response.data.result;
 
-        const files = [];
+        const pdfFiles = [];
 
-        // البحث عن جميع الرسائل التي تحتوي على ملفات من القناة المطلوبة
+        // البحث عن جميع الرسائل التي تحتوي على ملفات PDF من القناة المطلوبة
         for (let i = 0; i < updates.length; i++) {
             const update = updates[i];
-            if (update.message && update.message.chat && update.message.chat.username === channelUsername) {
-                // تحقق إذا كانت الرسالة تحتوي على ملف (وثيقة PDF، صورة، فيديو)
-                if (update.message.document || update.message.photo || update.message.video) {
-                    files.push(update.message.message_id);
+            if (update.channel_post && update.channel_post.chat && update.channel_post.chat.username === channelUsername) {
+                // تحقق إذا كانت الرسالة تحتوي على وثيقة PDF
+                if (update.channel_post.document && update.channel_post.document.mime_type === 'application/pdf') {
+                    pdfFiles.push(update.channel_post.message_id);
                 }
             }
         }
 
-        return files;
+        return pdfFiles;
     } catch (error) {
         console.error('Error fetching updates:', error);
     }
 
     return [];
 }
-
-// التعامل مع الرد على الأزرار
-bot.on('callback_query', async (callbackQuery) => {
-    const chatId = callbackQuery.message.chat.id;
-    const messageId = callbackQuery.message.message_id;
-    const data = callbackQuery.data;
-
-    // التحقق من القسم المختار
-    if (data === 'cs' || data === 'cyber') {
-        const department = data === 'cs' ? 'علوم الحاسوب' : 'الأمن السيبراني';
-        bot.editMessageText(`📅 *اختر السنة في قسم ${department}*:`, {
-            chat_id: chatId,
-            message_id: messageId,
-            parse_mode: 'Markdown',
-            reply_markup: {
-                inline_keyboard: [
-                    [{ text: 'سنة أولى', callback_data: `year_${data}_1` }, { text: 'سنة ثانية', callback_data: `year_${data}_2` }],
-                    [{ text: 'سنة ثالثة', callback_data: `year_${data}_3` }, { text: 'سنة رابعة', callback_data: `year_${data}_4` }],
-                    [{ text: '🔙 رجوع', callback_data: 'back_main' }]
-                ]
-            }
-        });
-
-        // حفظ حالة المستخدم
-        userState[chatId] = { type: 'department_selection', department };
-    }
-
-    // التعامل مع الرجوع
-    else if (data === 'back_main') {
-        bot.editMessageText(`
-🌟 *مرحباً بك في بوت الملخصات الجامعية* 🌟
-
-🔹 *مطور البوت*: _قاسم الشميري_ 🛠️
-
-📚 *اختر القسم المطلوب باستخدام الأزرار أدناه*:
-        `, {
-            chat_id: chatId,
-            message_id: messageId,
-            parse_mode: 'Markdown',
-            reply_markup: {
-                inline_keyboard: [
-                    [{ text: '🖥️ قسم علوم الحاسوب', callback_data: 'cs' }],
-                    [{ text: '🔐 قسم الأمن السيبراني', callback_data: 'cyber' }]
-                ]
-            }
-        });
-
-        // تحديث حالة المستخدم
-        userState[chatId] = 'main_menu';
-    }
-
-    // التعامل مع اختيار السنة
-    else if (data.startsWith('year_')) {
-        const [_, dept, year] = data.split('_');
-        const department = dept === 'cs' ? 'علوم الحاسوب' : 'الأمن السيبراني';
-
-        bot.editMessageText(`📚 *اختر الترم في السنة ${year} في قسم ${department}*:`, {
-            chat_id: chatId,
-            message_id: messageId,
-            parse_mode: 'Markdown',
-            reply_markup: {
-                inline_keyboard: [
-                    [{ text: '📘 ترم أول', callback_data: `term_${dept}_${year}_1` }, { text: '📗 ترم ثاني', callback_data: `term_${dept}_${year}_2` }],
-                    [{ text: '🔙 رجوع', callback_data: `back_year_${dept}` }]
-                ]
-            }
-        });
-
-        // تحديث حالة المستخدم
-        userState[chatId] = { type: 'year_selection', department, year };
-    }
-
-    // التعامل مع اختيار الترم
-    else if (data.startsWith('term_')) {
-        const [_, dept, year, term] = data.split('_');
-        const department = dept === 'cs' ? 'علوم الحاسوب' : 'الأمن السيبراني';
-
-        bot.editMessageText(`📓 *اختر المادة في الترم ${term === '1' ? 'الأول' : 'الثاني'} في السنة ${year} في قسم ${department}*:`, {
-            chat_id: chatId,
-            message_id: messageId,
-            parse_mode: 'Markdown',
-            reply_markup: {
-                inline_keyboard: [
-                    [{ text: 'رياضيات', callback_data: `subject_math_${dept}_${year}_${term}` }, { text: 'فيزياء', callback_data: `subject_physics_${dept}_${year}_${term}` }],
-                    [{ text: 'كيمياء', callback_data: `subject_chem_${dept}_${year}_${term}` }, { text: 'برمجة', callback_data: `subject_prog_${dept}_${year}_${term}` }],
-                    [{ text: '🔙 رجوع', callback_data: `back_term_${dept}_${year}` }]
-                ]
-            }
-        });
-
-        // تحديث حالة المستخدم
-        userState[chatId] = { type: 'term_selection', department, year, term };
-    }
-
-    // التعامل مع اختيار المادة وجلب الملفات
-    else if (data.startsWith('subject_')) {
-        const [_, subject, dept, year, term] = data.split('_');
-        const subjectName = subject === 'math' ? 'رياضيات' : subject === 'physics' ? 'فيزياء' : subject === 'chem' ? 'كيمياء' : 'برمجة';
-        const channelUsername = channelIDs[subjectName];
-
-        const fileMessageIds = await getAllFilesFromChannel(channelUsername);
-        if (fileMessageIds.length > 0) {
-            for (const messageId of fileMessageIds) {
-                bot.forwardMessage(chatId, channelUsername, messageId);
-            }
-        } else {
-            bot.sendMessage(chatId, `لم يتم العثور على ملفات لمادة ${subjectName}.`);
-        }
-    }
-});
 
 // إعداد نقطة نهاية لمراقبة حالة الخادم
 app.get('/', (req, res) => {
