@@ -8,7 +8,7 @@ const bot = new TelegramBot(API_TOKEN, { polling: true });
 
 // معرفات القنوات الخاصة بكل مادة
 const channelIDs = {
-    'رياضيات': '@math_channel',
+    'رياضيات': '@Dev_Qm_Start',
     'فيزياء': '@physics_channel',
     'كيمياء': '@chemistry_channel',
     'برمجة': '@programming_channel'
