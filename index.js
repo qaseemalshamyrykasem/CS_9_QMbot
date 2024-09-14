@@ -6,7 +6,7 @@ const app = express();
 const API_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const bot = new TelegramBot(API_TOKEN, { polling: true });
 
-// معرفات القنوات الخاصة بكل مادة
+// 🖥️ معرفات القنوات الخاصة بكل مادة
 const channels = {
     '🖥️ علوم الحاسوب': {
         '📚 السنة الأولى': {
@@ -44,7 +44,7 @@ const channels = {
     }
 };
 
-// التعامل مع أمر /start
+// ✨ التعامل مع أمر /start
 bot.onText(/\/start/, (msg) => {
     const chatId = msg.chat.id;
     const welcomeText = `🌟✨ أهلاً وسهلاً بك في بوت الملخصات الجامعية 🎓✨\n\n🔹 مطور البوت: قاسم الشميري\n\nاختر التخصص المطلوب من الأزرار أدناه:`;
@@ -61,12 +61,12 @@ bot.onText(/\/start/, (msg) => {
     });
 });
 
-// التعامل مع اختيار التخصص
+// 🗂️ التعامل مع اختيار التخصص
 bot.on('message', async (msg) => {
     const chatId = msg.chat.id;
     const text = msg.text;
 
-    // زر الرجوع
+    // 🔙 زر الرجوع
     if (text === '⬅️ الرجوع') {
         bot.sendMessage(chatId, '🔙 تم العودة إلى القائمة الرئيسية', {
             reply_markup: {
@@ -81,7 +81,7 @@ bot.on('message', async (msg) => {
         return;
     }
 
-    // التخصصات
+    // 🖥️ التخصصات
     if (channels[text]) {
         const years = Object.keys(channels[text]);
         const yearButtons = years.map(year => [year]);
@@ -97,7 +97,7 @@ bot.on('message', async (msg) => {
         return;
     }
 
-    // السنوات
+    // 📚 السنوات
     for (const major in channels) {
         if (channels[major][text]) {
             const terms = Object.keys(channels[major][text]);
@@ -115,7 +115,7 @@ bot.on('message', async (msg) => {
         }
     }
 
-    // الفصول
+    // 📖 الفصول
     for (const major in channels) {
         for (const year in channels[major]) {
             if (channels[major][year][text]) {
@@ -135,7 +135,7 @@ bot.on('message', async (msg) => {
         }
     }
 
-    // جلب الملفات من القناة المختارة
+    // 📁 جلب الملفات من القناة المختارة
     for (const major in channels) {
         for (const year in channels[major]) {
             for (const term in channels[major][year]) {
@@ -144,6 +144,7 @@ bot.on('message', async (msg) => {
                     const pdfFiles = await getPDFFilesFromChannel(channelUsername);
                     if (pdfFiles.length > 0) {
                         for (const file of pdfFiles) {
+                            // 📄 إرسال الملف مباشرة
                             bot.sendDocument(chatId, file);
                         }
                     } else {
@@ -156,7 +157,7 @@ bot.on('message', async (msg) => {
     }
 });
 
-// دالة لجلب ملفات PDF من قناة معينة
+// 📄 دالة لجلب ملفات PDF من قناة معينة
 async function getPDFFilesFromChannel(channelUsername) {
     const url = `https://api.telegram.org/bot${API_TOKEN}/getUpdates`;
 
@@ -170,7 +171,7 @@ async function getPDFFilesFromChannel(channelUsername) {
             const update = updates[i];
             if (update.channel_post && update.channel_post.chat && update.channel_post.chat.username === channelUsername) {
                 if (update.channel_post.document && update.channel_post.document.mime_type === 'application/pdf') {
-                    pdfFiles.push(update.channel_post.document.file_id);
+                    pdfFiles.push(update.channel_post.document.file_id); // 🗂️ حفظ file_id للملفات PDF
                 }
             }
         }
@@ -183,11 +184,12 @@ async function getPDFFilesFromChannel(channelUsername) {
     return [];
 }
 
-// إعداد نقطة نهاية لمراقبة حالة الخادم
+// 🌐 إعداد نقطة نهاية لمراقبة حالة الخادم
 app.get('/', (req, res) => {
     res.send("<b>telegram @DEV_QM</b>");
 });
 
+// 🚀 بدء الخادم
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
     console.log(`🚀 الخادم يعمل على المنفذ ${port}`);
