@@ -8,37 +8,37 @@ const bot = new TelegramBot(API_TOKEN, { polling: true });
 
 // معرفات القنوات الخاصة بكل مادة
 const channels = {
-    'علوم الحاسوب': {
-        'السنة الأولى': {
-            'الفصل الأول': {
-                'رياضيات': '@Dev_Qm_Start',
-                'برمجة': '@programming_channel'
+    '🖥️ علوم الحاسوب': {
+        '📚 السنة الأولى': {
+            '📖 الفصل الأول': {
+                '📐 رياضيات': '@math_channel',
+                '💻 برمجة': '@programming_channel'
             },
-            'الفصل الثاني': {
-                'فيزياء': '@physics_channel',
-                'كيمياء': '@chemistry_channel'
+            '📖 الفصل الثاني': {
+                '🔬 فيزياء': '@physics_channel',
+                '🧪 كيمياء': '@chemistry_channel'
             }
         },
-        'السنة الثانية': {
-            'الفصل الأول': {
-                'شبكات': '@network_channel',
-                'هندسة البرمجيات': '@software_engineering_channel'
+        '📚 السنة الثانية': {
+            '📖 الفصل الأول': {
+                '🌐 شبكات': '@network_channel',
+                '🛠️ هندسة البرمجيات': '@software_engineering_channel'
             },
-            'الفصل الثاني': {
-                'ذكاء اصطناعي': '@ai_channel',
-                'قواعد البيانات': '@db_channel'
+            '📖 الفصل الثاني': {
+                '🤖 ذكاء اصطناعي': '@ai_channel',
+                '🗄️ قواعد البيانات': '@db_channel'
             }
         }
     },
-    'الأمن السيبراني': {
-        'السنة الأولى': {
-            'الفصل الأول': {
-                'أمن الشبكات': '@network_security_channel',
-                'تشغيل أنظمة': '@os_channel'
+    '🔐 الأمن السيبراني': {
+        '📚 السنة الأولى': {
+            '📖 الفصل الأول': {
+                '🔒 أمن الشبكات': '@network_security_channel',
+                '🖥️ تشغيل أنظمة': '@os_channel'
             },
-            'الفصل الثاني': {
-                'تحليل البيانات': '@data_analysis_channel',
-                'أمن المعلومات': '@info_security_channel'
+            '📖 الفصل الثاني': {
+                '📊 تحليل البيانات': '@data_analysis_channel',
+                '🔐 أمن المعلومات': '@info_security_channel'
             }
         }
     }
@@ -47,12 +47,12 @@ const channels = {
 // التعامل مع أمر /start
 bot.onText(/\/start/, (msg) => {
     const chatId = msg.chat.id;
-    const welcomeText = `🌟 مرحباً بك في بوت الملخصات الجامعية 🌟\n\nاختر التخصص باستخدام الأزرار أدناه.`;
+    const welcomeText = `🌟✨ أهلاً وسهلاً بك في بوت الملخصات الجامعية 🎓✨\n\n🔹 مطور البوت: قاسم الشميري\n\nاختر التخصص المطلوب من الأزرار أدناه:`;
 
     bot.sendMessage(chatId, welcomeText, {
         reply_markup: {
             keyboard: [
-                ['علوم الحاسوب', 'الأمن السيبراني'],
+                ['🖥️ علوم الحاسوب', '🔐 الأمن السيبراني'],
                 ['⬅️ الرجوع']
             ],
             resize_keyboard: true,
@@ -68,10 +68,10 @@ bot.on('message', async (msg) => {
 
     // زر الرجوع
     if (text === '⬅️ الرجوع') {
-        bot.sendMessage(chatId, 'تم العودة إلى القائمة الرئيسية', {
+        bot.sendMessage(chatId, '🔙 تم العودة إلى القائمة الرئيسية', {
             reply_markup: {
                 keyboard: [
-                    ['علوم الحاسوب', 'الأمن السيبراني'],
+                    ['🖥️ علوم الحاسوب', '🔐 الأمن السيبراني'],
                     ['⬅️ الرجوع']
                 ],
                 resize_keyboard: true,
@@ -87,7 +87,7 @@ bot.on('message', async (msg) => {
         const yearButtons = years.map(year => [year]);
         yearButtons.push(['⬅️ الرجوع']);
 
-        bot.sendMessage(chatId, `اختر السنة الدراسية لمادة ${text}:`, {
+        bot.sendMessage(chatId, `📅 اختر السنة الدراسية لمادة ${text}:`, {
             reply_markup: {
                 keyboard: yearButtons,
                 resize_keyboard: true,
@@ -104,7 +104,7 @@ bot.on('message', async (msg) => {
             const termButtons = terms.map(term => [term]);
             termButtons.push(['⬅️ الرجوع']);
 
-            bot.sendMessage(chatId, `اختر الفصل الدراسي للسنة ${text} في ${major}:`, {
+            bot.sendMessage(chatId, `📆 اختر الفصل الدراسي للسنة ${text} في ${major}:`, {
                 reply_markup: {
                     keyboard: termButtons,
                     resize_keyboard: true,
@@ -123,7 +123,7 @@ bot.on('message', async (msg) => {
                 const subjectButtons = subjects.map(subject => [subject]);
                 subjectButtons.push(['⬅️ الرجوع']);
 
-                bot.sendMessage(chatId, `اختر المادة للفصل ${text} في ${major}:`, {
+                bot.sendMessage(chatId, `📚 اختر المادة للفصل ${text} في ${major}:`, {
                     reply_markup: {
                         keyboard: subjectButtons,
                         resize_keyboard: true,
@@ -147,7 +147,7 @@ bot.on('message', async (msg) => {
                             bot.sendDocument(chatId, file);
                         }
                     } else {
-                        bot.sendMessage(chatId, 'لم يتم العثور على ملفات PDF في القناة.');
+                        bot.sendMessage(chatId, '⚠️ لم يتم العثور على ملفات PDF في القناة.');
                     }
                     return;
                 }
@@ -177,7 +177,7 @@ async function getPDFFilesFromChannel(channelUsername) {
 
         return pdfFiles;
     } catch (error) {
-        console.error('Error fetching updates:', error);
+        console.error('⚠️ حدث خطأ أثناء جلب التحديثات:', error);
     }
 
     return [];
@@ -190,5 +190,5 @@ app.get('/', (req, res) => {
 
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
-    console.log(`Server is running on port ${port}`);
+    console.log(`🚀 الخادم يعمل على المنفذ ${port}`);
 });
