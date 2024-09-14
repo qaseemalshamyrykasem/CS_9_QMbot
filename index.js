@@ -6,54 +6,53 @@ const app = express();
 const API_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const bot = new TelegramBot(API_TOKEN, { polling: true });
 
-// 🖥️ معرفات القنوات الخاصة بكل مادة
+// 📢 معلومات المطور
+const developerInfo = `
+👨‍💻 مطور البوت: قاسم الشميري
+✉️ للتواصل: @DEV_QM
+
+🔧 بوت ملخصات جامعية شامل ومتكامل يساعدك في الوصول إلى المواد الدراسية بسهولة وسرعة. قم باختيار المادة المناسبة، ثم اختر الأستاذ للحصول على الملخصات المرتبطة بالمواد.`;
+
+
+// 🖥️ معرفات القنوات لكل أستاذ في كل مادة
 const channels = {
     '🖥️ علوم الحاسوب': {
         '📚 السنة الأولى': {
             '📖 الفصل الأول': {
-                '📐 رياضيات': '@Dev_Qm_Start',
-                '💻 برمجة': '@programming_channel'
+                '📐 رياضيات': {
+                    '📘 د. مالك الجبري': '@Dev_Qm_Start',
+                    '📗 أ. علياء الشميري': '@math_aly_channel'
+                },
+                '💻 برمجة': {
+                    '📘 د. مالك الجبري': '@programming_malek_channel',
+                    '📗 أ. علياء الشميري': '@programming_aly_channel'
+                }
             },
             '📖 الفصل الثاني': {
-                '🔬 فيزياء': '@physics_channel',
-                '🧪 كيمياء': '@chemistry_channel'
+                '🔬 فيزياء': {
+                    '📘 د. مالك الجبري': '@physics_malek_channel',
+                    '📗 أ. علياء الشميري': '@physics_aly_channel'
+                },
+                '🧪 كيمياء': {
+                    '📘 د. مالك الجبري': '@chemistry_malek_channel',
+                    '📗 أ. علياء الشميري': '@chemistry_aly_channel'
+                }
             }
         },
-        '📚 السنة الثانية': {
-            '📖 الفصل الأول': {
-                '🌐 شبكات': '@network_channel',
-                '🛠️ هندسة البرمجيات': '@software_engineering_channel'
-            },
-            '📖 الفصل الثاني': {
-                '🤖 ذكاء اصطناعي': '@ai_channel',
-                '🗄️ قواعد البيانات': '@db_channel'
-            }
-        }
-    },
-    '🔐 الأمن السيبراني': {
-        '📚 السنة الأولى': {
-            '📖 الفصل الأول': {
-                '🔒 أمن الشبكات': '@network_security_channel',
-                '🖥️ تشغيل أنظمة': '@os_channel'
-            },
-            '📖 الفصل الثاني': {
-                '📊 تحليل البيانات': '@data_analysis_channel',
-                '🔐 أمن المعلومات': '@info_security_channel'
-            }
-        }
+        // يمكنك متابعة باقي السنوات والتخصصات بنفس النمط
     }
 };
 
 // ✨ التعامل مع أمر /start
 bot.onText(/\/start/, (msg) => {
     const chatId = msg.chat.id;
-    const welcomeText = `🌟✨ أهلاً وسهلاً بك في بوت الملخصات الجامعية 🎓✨\n\n🔹 مطور البوت: قاسم الشميري\n\nاختر التخصص المطلوب من الأزرار أدناه:`;
+    const welcomeText = `🌟 أهلاً وسهلاً بك في بوت الملخصات الجامعية 🎓\n\n${developerInfo}`;
 
     bot.sendMessage(chatId, welcomeText, {
         reply_markup: {
             keyboard: [
-                ['🖥️ علوم الحاسوب', '🔐 الأمن السيبراني'],
-                ['⬅️ الرجوع']
+                [{ text: '🖥️ علوم الحاسوب' }, { text: '🔐 الأمن السيبراني' }],
+                [{ text: '⬅️ الرجوع إلى القائمة الرئيسية' }]
             ],
             resize_keyboard: true,
             one_time_keyboard: false
@@ -67,12 +66,12 @@ bot.on('message', async (msg) => {
     const text = msg.text;
 
     // 🔙 زر الرجوع
-    if (text === '⬅️ الرجوع') {
+    if (text === '⬅️ الرجوع إلى القائمة الرئيسية') {
         bot.sendMessage(chatId, '🔙 تم العودة إلى القائمة الرئيسية', {
             reply_markup: {
                 keyboard: [
-                    ['🖥️ علوم الحاسوب', '🔐 الأمن السيبراني'],
-                    ['⬅️ الرجوع']
+                    [{ text: '🖥️ علوم الحاسوب' }, { text: '🔐 الأمن السيبراني' }],
+                    [{ text: '⬅️ الرجوع إلى القائمة الرئيسية' }]
                 ],
                 resize_keyboard: true,
                 one_time_keyboard: false
@@ -84,8 +83,8 @@ bot.on('message', async (msg) => {
     // 🖥️ التخصصات
     if (channels[text]) {
         const years = Object.keys(channels[text]);
-        const yearButtons = years.map(year => [year]);
-        yearButtons.push(['⬅️ الرجوع']);
+        const yearButtons = years.map(year => [{ text: year }]);
+        yearButtons.push([{ text: '⬅️ الرجوع إلى القائمة الرئيسية' }]);
 
         bot.sendMessage(chatId, `📅 اختر السنة الدراسية لمادة ${text}:`, {
             reply_markup: {
@@ -101,8 +100,8 @@ bot.on('message', async (msg) => {
     for (const major in channels) {
         if (channels[major][text]) {
             const terms = Object.keys(channels[major][text]);
-            const termButtons = terms.map(term => [term]);
-            termButtons.push(['⬅️ الرجوع']);
+            const termButtons = terms.map(term => [{ text: term }]);
+            termButtons.push([{ text: '⬅️ الرجوع إلى القائمة الرئيسية' }]);
 
             bot.sendMessage(chatId, `📆 اختر الفصل الدراسي للسنة ${text} في ${major}:`, {
                 reply_markup: {
@@ -120,8 +119,8 @@ bot.on('message', async (msg) => {
         for (const year in channels[major]) {
             if (channels[major][year][text]) {
                 const subjects = Object.keys(channels[major][year][text]);
-                const subjectButtons = subjects.map(subject => [subject]);
-                subjectButtons.push(['⬅️ الرجوع']);
+                const subjectButtons = subjects.map(subject => [{ text: subject }]);
+                subjectButtons.push([{ text: '⬅️ الرجوع إلى القائمة الرئيسية' }]);
 
                 bot.sendMessage(chatId, `📚 اختر المادة للفصل ${text} في ${major}:`, {
                     reply_markup: {
@@ -135,22 +134,47 @@ bot.on('message', async (msg) => {
         }
     }
 
-    // 📁 جلب الملفات من القناة المختارة
+    // 📁 بعد اختيار المادة - اختيار الأستاذ
     for (const major in channels) {
         for (const year in channels[major]) {
             for (const term in channels[major][year]) {
                 if (channels[major][year][term][text]) {
-                    const channelUsername = channels[major][year][term][text];
-                    const pdfFiles = await getPDFFilesFromChannel(channelUsername);
-                    if (pdfFiles.length > 0) {
-                        for (const file of pdfFiles) {
-                            // 📄 إرسال الملف مباشرة
-                            bot.sendDocument(chatId, file);
+                    const professors = Object.keys(channels[major][year][term][text]);
+                    const professorButtons = professors.map(prof => [{ text: prof }]);
+                    professorButtons.push([{ text: '⬅️ الرجوع إلى القائمة الرئيسية' }]);
+
+                    bot.sendMessage(chatId, `👨‍🏫 اختر الأستاذ للمادة ${text}:`, {
+                        reply_markup: {
+                            keyboard: professorButtons,
+                            resize_keyboard: true,
+                            one_time_keyboard: false
                         }
-                    } else {
-                        bot.sendMessage(chatId, '⚠️ لم يتم العثور على ملفات PDF في القناة.');
-                    }
+                    });
                     return;
+                }
+            }
+        }
+    }
+
+    // 📄 جلب الملفات بعد اختيار الأستاذ
+    for (const major in channels) {
+        for (const year in channels[major]) {
+            for (const term in channels[major][year]) {
+                for (const subject in channels[major][year][term]) {
+                    if (channels[major][year][term][subject][text]) {
+                        const channelUsername = channels[major][year][term][subject][text];
+                        const pdfFiles = await getPDFFilesFromChannel(channelUsername);
+
+                        if (pdfFiles.length > 0) {
+                            for (const file of pdfFiles) {
+                                // 📄 إرسال الملف مباشرة
+                                bot.sendDocument(chatId, file);
+                            }
+                        } else {
+                            bot.sendMessage(chatId, '⚠️ لم يتم العثور على ملفات PDF في القناة.');
+                        }
+                        return;
+                    }
                 }
             }
         }
