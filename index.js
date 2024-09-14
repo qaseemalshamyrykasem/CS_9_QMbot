@@ -21,44 +21,46 @@ bot.onText(/\/start/, (msg) => {
 
     bot.sendMessage(chatId, welcomeText, {
         reply_markup: {
-            inline_keyboard: [
-                [{ text: '📘 رياضيات', callback_data: 'رياضيات' }],
-                [{ text: '📗 فيزياء', callback_data: 'فيزياء' }],
-                [{ text: '📕 كيمياء', callback_data: 'كيمياء' }],
-                [{ text: '📙 برمجة', callback_data: 'برمجة' }],
-                [{ text: '⬅️ الرجوع', callback_data: 'back' }]
-            ]
+            keyboard: [
+                ['رياضيات', 'فيزياء'],
+                ['كيمياء', 'برمجة'],
+                ['⬅️ الرجوع']
+            ],
+            resize_keyboard: true,
+            one_time_keyboard: false
         }
     });
 });
 
-// التعامل مع الضغط على الأزرار
-bot.on('callback_query', async (callbackQuery) => {
-    const chatId = callbackQuery.message.chat.id;
-    const data = callbackQuery.data;
+// التعامل مع الرسائل من المستخدم
+bot.on('message', async (msg) => {
+    const chatId = msg.chat.id;
+    const text = msg.text;
 
-    if (data === 'back') {
+    // زر الرجوع
+    if (text === '⬅️ الرجوع') {
         bot.sendMessage(chatId, 'تم العودة إلى القائمة الرئيسية', {
             reply_markup: {
-                inline_keyboard: [
-                    [{ text: '📘 رياضيات', callback_data: 'رياضيات' }],
-                    [{ text: '📗 فيزياء', callback_data: 'فيزياء' }],
-                    [{ text: '📕 كيمياء', callback_data: 'كيمياء' }],
-                    [{ text: '📙 برمجة', callback_data: 'برمجة' }]
-                ]
+                keyboard: [
+                    ['رياضيات', 'فيزياء'],
+                    ['كيمياء', 'برمجة'],
+                    ['⬅️ الرجوع']
+                ],
+                resize_keyboard: true,
+                one_time_keyboard: false
             }
         });
         return;
     }
 
-    if (['رياضيات', 'فيزياء', 'كيمياء', 'برمجة'].includes(data)) {
-        const channelUsername = channelIDs[data];
+    if (['رياضيات', 'فيزياء', 'كيمياء', 'برمجة'].includes(text)) {
+        const channelUsername = channelIDs[text];
         if (channelUsername) {
-            const pdfMessageIds = await getPDFFilesFromChannel(channelUsername);
-            if (pdfMessageIds.length > 0) {
-                for (const messageId of pdfMessageIds) {
+            const pdfFiles = await getPDFFilesFromChannel(channelUsername);
+            if (pdfFiles.length > 0) {
+                for (const file of pdfFiles) {
                     // إعادة توجيه كل رسالة تحتوي على ملف PDF من القناة الخاصة
-                    bot.forwardMessage(chatId, channelUsername, messageId);
+                    bot.sendDocument(chatId, file);
                 }
             } else {
                 bot.sendMessage(chatId, 'لم يتم العثور على ملفات PDF في القناة.');
@@ -69,7 +71,7 @@ bot.on('callback_query', async (callbackQuery) => {
     }
 });
 
-// دالة لجلب ملفات PDF من قناة معينة باستخدام getUpdates
+// دالة لجلب ملفات PDF من قناة معينة
 async function getPDFFilesFromChannel(channelUsername) {
     const url = `https://api.telegram.org/bot${API_TOKEN}/getUpdates`;
 
@@ -85,7 +87,7 @@ async function getPDFFilesFromChannel(channelUsername) {
             if (update.channel_post && update.channel_post.chat && update.channel_post.chat.username === channelUsername) {
                 // تحقق إذا كانت الرسالة تحتوي على وثيقة PDF
                 if (update.channel_post.document && update.channel_post.document.mime_type === 'application/pdf') {
-                    pdfFiles.push(update.channel_post.message_id);
+                    pdfFiles.push(update.channel_post.document.file_id);
                 }
             }
         }
