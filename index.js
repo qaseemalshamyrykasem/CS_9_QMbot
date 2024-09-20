@@ -1,12 +1,11 @@
 const TelegramBot = require('node-telegram-bot-api');
 const express = require('express');
-const axios = require('axios'); // لإجراء طلبات HTTP إلى API الخاص بـ Telegram
+const axios = require('axios');
 const app = express();
 
 const API_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const bot = new TelegramBot(API_TOKEN, { polling: true });
 
-// معرفات القنوات الخاصة بكل مادة وأستاذ
 const channels = {
     'رياضيات': {
         'د. مالك الجبري': '@Dev_Qm_Start',
@@ -89,7 +88,10 @@ async function getAllFilesFromChannel(channelUsername) {
             if (update.message && update.message.chat && update.message.chat.username === channelUsername) {
                 // تحقق إذا كانت الرسالة تحتوي على ملف (وثيقة PDF)
                 if (update.message.document) {
-                    files.push(update.message.message_id);
+                    files.push({
+                        file_id: update.message.document.file_id,
+                        caption: update.message.caption || 'بدون عنوان'
+                    });
                 }
             }
         }
@@ -113,11 +115,11 @@ bot.on('callback_query', async (callbackQuery) => {
         const professor = data[1] === 'مالك' ? 'د. مالك الجبري' : 'أ. علياء الشميري';
         const channelUsername = channels[subject][professor];
 
-        const fileMessageIds = await getAllFilesFromChannel(channelUsername);
-        if (fileMessageIds.length > 0) {
-            for (const messageId of fileMessageIds) {
-                // إعادة توجيه كل رسالة تحتوي على ملف من القناة الخاصة
-                bot.forwardMessage(chatId, channelUsername, messageId);
+        const files = await getAllFilesFromChannel(channelUsername);
+        if (files.length > 0) {
+            for (const file of files) {
+                // إرسال كل ملف مباشرة بدلاً من إعادة توجيه الرسالة
+                bot.sendDocument(chatId, file.file_id, { caption: file.caption });
             }
         } else {
             bot.sendMessage(chatId, 'لم يتم العثور على ملفات في القناة.');
