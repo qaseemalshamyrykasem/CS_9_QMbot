@@ -1,8 +1,11 @@
 const { Telegraf, Markup } = require('telegraf');
 const axios = require('axios');
+const express = require('express');
 
-// استبدل بقيمتك الخاصة
-const bot = new Telegraf('7425258448:AAGkC0452G8QC0Cxt-9-2wiBRjaMSnSA76s');
+// استبدل بتوكن البوت الخاص بك
+const bot = new Telegraf(process.env.BOT_TOKEN);
+const app = express();
+
 const channel_id = '@Dev_Qm_Start';  // ضع هنا معرف القناة
 
 // المتغيرات لحفظ اختيارات المستخدم
@@ -23,16 +26,16 @@ async function fetchFilesFromChannel() {
     try {
         const response = await axios.get(`https://api.telegram.org/bot${bot.token}/getUpdates`);
         const messages = response.data.result;
-        
+
         // فلترة الرسائل التي تحتوي على ملفات
         const files = messages.filter(msg => msg.message && msg.message.document);
-        
+
         // استخراج معرفات الملفات
         const fileDetails = files.map(file => ({
             file_id: file.message.document.file_id,
             file_name: file.message.document.file_name
         }));
-        
+
         return fileDetails;
     } catch (error) {
         console.error('Error fetching updates:', error);
@@ -83,5 +86,16 @@ bot.hears(subjects['أمن سيبراني'].concat(subjects['علوم حاسوب
     }
 });
 
-// تشغيل البوت
-bot.launch();
+// تشغيل البوت باستخدام webhook
+app.use(bot.webhookCallback('/telegram-bot'));
+bot.telegram.setWebhook(`${process.env.RENDER_EXTERNAL_URL}/telegram-bot`);
+
+const PORT = process.env.PORT || 3000;
+
+app.get('/', (req, res) => {
+    res.send('بوت تليجرام يعمل!');
+});
+
+app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+});
