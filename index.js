@@ -1,11 +1,12 @@
 const { Telegraf, Markup } = require('telegraf');
 const axios = require('axios');
 const express = require('express');
-
-// استبدل بتوكن البوت الخاص بك
-const bot = new Telegraf(process.env.BOT_TOKEN);
 const app = express();
 
+// استبدل توكن البوت هنا بالتوكن الخاص بك
+const bot = new Telegraf(process.env.BOT_TOKEN);
+
+// معرف القناة الخاصة بك
 const channel_id = '@Dev_Qm_Start';  // ضع هنا معرف القناة
 
 // المتغيرات لحفظ اختيارات المستخدم
@@ -39,6 +40,7 @@ async function fetchFilesFromChannel() {
         return fileDetails;
     } catch (error) {
         console.error('Error fetching updates:', error);
+        return [];
     }
 }
 
