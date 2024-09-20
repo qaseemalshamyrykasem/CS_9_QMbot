@@ -1,72 +1,86 @@
-const TelegramBot = require('node-telegram-bot-api');
-const express = require('express');
+const { Telegraf, Markup } = require('telegraf');
 const axios = require('axios');
-const app = express();
 
-const API_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-const bot = new TelegramBot(API_TOKEN, { polling: true });
+// استبدل بقيمتك الخاصة
+const bot = new Telegraf('7425258448:AAGkC0452G8QC0Cxt-9-2wiBRjaMSnSA76s');
+const channel_id = '@Dev_Qm_Start';  // ضع هنا معرف القناة
 
-// قاعدة بيانات مؤقتة لتخزين معرفات الملفات (File IDs)
-const files = {
-    'تخصص1': {
-        'ترم1': {
-            'مادة1': {
-                'دكتور1': 'FILE_ID_1', // استخدم File ID الخاص بالملف هنا
-                'دكتور2': 'FILE_ID_2'
-            },
-            'مادة2': {
-                'دكتور1': 'FILE_ID_3'
-            }
-        },
-        'ترم2': {
-            'مادة1': {
-                'دكتور1': 'FILE_ID_4'
-            }
-        }
-    }
-};
-
-// المتغيرات لحفظ الاختيارات
+// المتغيرات لحفظ اختيارات المستخدم
 let currentMajor = '';
+let currentYear = '';
 let currentTerm = '';
 let currentSubject = '';
 
-// قائمة التخصصات
-const majors = Object.keys(files);
+// بيانات المواد لكل تخصص
+const subjects = {
+    'أمن سيبراني': ['مادة1', 'مادة2', 'مادة3', 'مادة4', 'مادة5', 'مادة6', 'مادة7'],
+    'علوم حاسوب': ['مادة1', 'مادة2', 'مادة3', 'مادة4', 'مادة5', 'مادة6', 'مادة7'],
+    'نظم معلومات': ['مادة1', 'مادة2', 'مادة3', 'مادة4', 'مادة5', 'مادة6', 'مادة7']
+};
 
-// عند بدء المحادثة
+// دالة لجلب الملفات من القناة
+async function fetchFilesFromChannel() {
+    try {
+        const response = await axios.get(`https://api.telegram.org/bot${bot.token}/getUpdates`);
+        const messages = response.data.result;
+        
+        // فلترة الرسائل التي تحتوي على ملفات
+        const files = messages.filter(msg => msg.message && msg.message.document);
+        
+        // استخراج معرفات الملفات
+        const fileDetails = files.map(file => ({
+            file_id: file.message.document.file_id,
+            file_name: file.message.document.file_name
+        }));
+        
+        return fileDetails;
+    } catch (error) {
+        console.error('Error fetching updates:', error);
+    }
+}
+
+// عند بدء المحادثة، عرض قائمة التخصصات
 bot.start((ctx) => {
-    ctx.reply('مرحبًا! اختر التخصص:', Markup.keyboard(majors).oneTime().resize());
+    ctx.reply('مرحبًا! اختر التخصص:', 
+        Markup.keyboard([['أمن سيبراني'], ['علوم حاسوب'], ['نظم معلومات']]).oneTime().resize());
 });
 
 // اختيار التخصص
-bot.hears(majors, (ctx) => {
+bot.hears(['أمن سيبراني', 'علوم حاسوب', 'نظم معلومات'], (ctx) => {
     currentMajor = ctx.message.text;
-    const terms = Object.keys(files[currentMajor]);
-    ctx.reply('اختر الترم:', Markup.keyboard(terms).oneTime().resize());
+    ctx.reply(`لقد اخترت تخصص: ${currentMajor}. اختر السنة الدراسية:`,
+        Markup.keyboard([['السنة الأولى'], ['السنة الثانية'], ['السنة الثالثة'], ['السنة الرابعة']]).oneTime().resize());
+});
+
+// اختيار السنة
+bot.hears(['السنة الأولى', 'السنة الثانية', 'السنة الثالثة', 'السنة الرابعة'], (ctx) => {
+    currentYear = ctx.message.text;
+    ctx.reply(`لقد اخترت: ${currentYear}. اختر الترم:`,
+        Markup.keyboard([['الترم الأول'], ['الترم الثاني']]).oneTime().resize());
 });
 
 // اختيار الترم
-bot.hears((ctx) => Object.keys(files[currentMajor]), (ctx) => {
+bot.hears(['الترم الأول', 'الترم الثاني'], (ctx) => {
     currentTerm = ctx.message.text;
-    const subjects = Object.keys(files[currentMajor][currentTerm]);
-    ctx.reply('اختر المادة:', Markup.keyboard(subjects).oneTime().resize());
+    ctx.reply(`لقد اخترت: ${currentTerm}. اختر المادة:`,
+        Markup.keyboard(subjects[currentMajor]).oneTime().resize());
 });
 
-// اختيار المادة
-bot.hears((ctx) => Object.keys(files[currentMajor][currentTerm]), (ctx) => {
+// اختيار المادة وجلب الملفات
+bot.hears(subjects['أمن سيبراني'].concat(subjects['علوم حاسوب'], subjects['نظم معلومات']), async (ctx) => {
     currentSubject = ctx.message.text;
-    const doctors = Object.keys(files[currentMajor][currentTerm][currentSubject]);
-    ctx.reply('اختر الدكتور:', Markup.keyboard(doctors).oneTime().resize());
-});
+    ctx.reply(`لقد اخترت المادة: ${currentSubject}. يتم الآن جلب الملفات...`);
 
-// اختيار الدكتور وإرسال الملف
-bot.hears((ctx) => Object.keys(files[currentMajor][currentTerm][currentSubject]), (ctx) => {
-    const doctor = ctx.message.text;
-    const fileId = files[currentMajor][currentTerm][currentSubject][doctor];
-    
-    // إرسال الملف باستخدام File ID من القناة
-    ctx.replyWithDocument(fileId);
+    // جلب الملفات من القناة
+    const files = await fetchFilesFromChannel();
+
+    if (files.length > 0) {
+        files.forEach(file => {
+            ctx.replyWithDocument(file.file_id, { caption: file.file_name });
+        });
+    } else {
+        ctx.reply('لم يتم العثور على ملفات لهذه المادة.');
+    }
 });
 
 // تشغيل البوت
